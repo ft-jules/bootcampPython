@@ -51,11 +51,11 @@ die(){ printf "%s\n"  "${RED}[ERR ]${RST} $*" >&2; exit 1; }
 need_cmd(){ command -v "$1" >/dev/null 2>&1 || die "Commande requise absente: $1"; }
 backup_file(){ [ -f "$1" ] && cp -p "$1" "$1.bak.$(date +%Y%m%d-%H%M%S)" && ok "Backup: $1.bak.*" || true; }
 
+# On se base sur $SHELL (hérité) et non sur le processus '$$' (qui est 'bash')
 current_shell(){
-  local sh="$(ps -p $$ -o comm= || true)"
-  case "$sh" in
-    *zsh) echo "zsh";;
-    *bash) echo "bash";;
+  case "${SHELL##*/}" in
+    zsh) echo "zsh";;
+    bash) echo "bash";;
     *) echo "${SHELL##*/}";;
   esac
 }
@@ -155,6 +155,17 @@ EOF
   fi
 }
 
+accept_tos(){
+  info "Acceptation des ToS d'Anaconda..."
+  # On active le 'hook' pour avoir la commande 'conda' disponible
+  eval "$("$(conda_bin)" shell.$(current_shell) hook)"
+  
+  # On accepte les deux channels requis
+  conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
+  conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
+  ok "ToS acceptées."
+}
+
 add_prompt_indicator(){
   local SH="$(current_shell)"; local RC="$(rc_file_for "$SH")"
   if grep -q "# >>> conda-prompt (PyMamouth) >>>" "$RC" 2>/dev/null; then
@@ -225,7 +236,12 @@ main(){
   download_miniconda
   install_miniconda
   conda_init
-  add_prompt_indicator
+  accept_tos
+  
+  # --- MODIFICATION ICI ---
+  # On n'appelle plus cette fonction pour éviter les conflits de prompt
+  # add_prompt_indicator
+  
   create_or_update_env
   post_checks_and_open
 }
