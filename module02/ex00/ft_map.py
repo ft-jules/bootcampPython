@@ -1,8 +1,8 @@
 def ft_map(function, iterable, *args):
     if args:
-        all_iterables = (iterables,) + args
-        for elements in zip(*all_iterables):
-            yield function(*elements)
+        all_iterables = (iterable,) + args
+        for element in zip(*all_iterables):
+            yield function(*element)
     else:
-        for elements in iterable:
+        for element in iterable:
             yield function(element)
